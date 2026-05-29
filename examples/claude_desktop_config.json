@@ -6,6 +6,13 @@
       "env": {
         "EDINET_API_KEY": "your_subscription_key_here"
       }
+    },
+    "edgar": {
+      "command": "uvx",
+      "args": ["--from", "edinet-mcp[edgar]", "edgar-mcp", "serve"],
+      "env": {
+        "EDGAR_IDENTITY": "Your Name <you@example.com>"
+      }
     }
   }
 }

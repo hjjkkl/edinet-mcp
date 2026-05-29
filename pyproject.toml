@@ -34,6 +34,10 @@ dependencies = [
 
 [project.optional-dependencies]
 pandas = ["pandas>=2.0"]
+# SEC EDGAR MCP server (edgar_mcp package). Optional so the core EDINET install
+# stays lean — `pip install "edinet-mcp[edgar]"` pulls edgartools (+ pandas,
+# pyarrow, lxml, ...). Required to run `edgar-mcp`.
+edgar = ["edgartools>=5.28"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
@@ -47,6 +51,7 @@ dev = [
 
 [project.scripts]
 edinet-mcp = "edinet_mcp.cli:cli"
+edgar-mcp = "edgar_mcp.cli:cli"
 
 [project.urls]
 Homepage = "https://github.com/ajtgjmdjp/edinet-mcp"
@@ -61,7 +66,7 @@ build-backend = "hatchling.build"
 exclude = [".env", ".env.*", ".mcpregistry_*", ".claude/", ".github/"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/edinet_mcp"]
+packages = ["src/edinet_mcp", "src/edgar_mcp"]
 
 [tool.ruff]
 target-version = "py310"
@@ -73,13 +78,20 @@ select = ["E", "F", "I", "UP", "B", "SIM", "TCH", "RUF"]
 ignore = ["RUF001"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["edinet_mcp"]
+known-first-party = ["edinet_mcp", "edgar_mcp"]
 
 [tool.mypy]
 python_version = "3.10"
 strict = true
-packages = ["edinet_mcp"]
+packages = ["edinet_mcp", "edgar_mcp"]
 mypy_path = ["src"]
+
+# edgartools ships no py.typed; treat it (and pandas/numpy, pulled in via the
+# edgar extra) as untyped so the edgar_mcp wrapper still type-checks under strict.
+[[tool.mypy.overrides]]
+module = ["edgar.*", "pandas.*", "numpy.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
