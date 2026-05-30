@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-05-30
+
+### Added
+- **EDGAR MCP server** (`edgar_mcp` package, `edgar-mcp` entry point): a second,
+  read-only MCP server wrapping [`edgartools`](https://github.com/dgunning/edgartools)
+  to expose SEC EDGAR primary-source data — fundamentals (10-K/10-Q/8-K + XBRL),
+  research (13F / Form 4 / SC 13D/G), and near-real-time filing monitoring
+  (poll + watermark). 13 tools. Shipped as the optional `edgar` extra
+  (`pip install "edinet-mcp[edgar]"`) to keep the core EDINET install lean.
+  Requires `EDGAR_IDENTITY`, validated fail-fast at startup per SEC policy.
+- **13F option awareness**: `get_13f_holdings` returns `put_call`
+  (`"Put"`/`"Call"`/`null`), `class`, and `type` per holding, so a security's
+  long shares and its options — reported as separate 13F rows — are not conflated.
+
 ## [0.6.5] - 2026-04-21
 
 ### Security
