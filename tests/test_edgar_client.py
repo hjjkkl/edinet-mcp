@@ -84,6 +84,38 @@ class TestRecords:
         assert _records(FakeDF()) == [{"a": 1, "b": None}]
 
 
+class TestMapHolding:
+    def test_equity_row_putcall_none(self):
+        row = {
+            "Cusip": "67066G104",
+            "Ticker": "NVDA",
+            "Issuer": "NVIDIA CORP",
+            "Class": "COM",
+            "Type": "Shares",
+            "PutCall": "",  # equity → normalised to None
+            "SharesPrnAmount": 100,
+            "Value": 1000.0,
+        }
+        out = EdgarClient._map_holding(row, total=2000.0)
+        assert out["ticker"] == "NVDA"
+        assert out["put_call"] is None
+        assert out["class"] == "COM"
+        assert out["type"] == "Shares"
+        assert out["value_usd"] == 1000.0
+        assert out["pct_of_portfolio"] == 50.0
+
+    def test_put_row_preserved(self):
+        row = {"Cusip": "67066G104", "Ticker": "NVDA", "PutCall": "Put", "Value": 500.0}
+        out = EdgarClient._map_holding(row, total=2000.0)
+        # Same ticker as the equity row but distinct option exposure.
+        assert out["put_call"] == "Put"
+        assert out["pct_of_portfolio"] == 25.0
+
+    def test_zero_total_no_div_error(self):
+        out = EdgarClient._map_holding({"Value": 10.0}, total=0.0)
+        assert out["pct_of_portfolio"] is None
+
+
 class TestIdentityFailFast:
     def test_empty_identity_raises(self, monkeypatch):
         monkeypatch.delenv("EDGAR_IDENTITY", raising=False)
