@@ -248,7 +248,13 @@ async def get_13f_holdings(
     fund: Annotated[str, Field(description="Fund CIK or name, e.g. 1423053.")],
     top: Annotated[int, Field(description="Top N holdings by value.", ge=1, le=500)] = 50,
 ) -> dict[str, Any]:
-    """Return an institution's latest 13F-HR holdings (top N by value)."""
+    """Return an institution's latest 13F-HR holdings (top N by value).
+
+    Each holding includes `put_call` ("Put"/"Call"/null=equity), `class`, and
+    `type`. 13F lists a security's long shares and its options as SEPARATE rows
+    (same ticker, different `put_call`) — do not naively sum across them; a Put
+    is the opposite exposure to a long position.
+    """
     return await _safe_dict("get_13f_holdings", str(fund), top=top)
 
 

@@ -467,30 +467,45 @@ class EdgarClient:
             total = float(total_value) if total_value else 0.0
         except (ValueError, TypeError):
             total = 0.0
-        holdings: list[dict[str, Any]] = []
-        for row in rows[:top]:
-            value = row.get("Value") or row.get("value")
-            try:
-                value_f = float(value) if value is not None else None
-            except (ValueError, TypeError):
-                value_f = None
-            pct = round(value_f / total * 100, 4) if value_f and total else None
-            holdings.append(
-                {
-                    "cusip": row.get("Cusip") or row.get("cusip"),
-                    "ticker": row.get("Ticker") or row.get("ticker"),
-                    "name": row.get("Issuer") or row.get("issuer") or row.get("name"),
-                    "shares": row.get("SharesPrnAmount") or row.get("shares"),
-                    "value_usd": value_f,
-                    "pct_of_portfolio": pct,
-                }
-            )
+        holdings = [self._map_holding(row, total) for row in rows[:top]]
         return {
             "fund": _to_jsonable(getattr(company, "name", None)) or fund,
             "cik": _to_jsonable(getattr(company, "cik", None)),
             "period": _to_jsonable(getattr(obj, "report_period", None)),
             "total_value_usd": total_value,
+            # 13F splits a security into separate rows per option type, so the
+            # same ticker can appear multiple times (long shares + Put + Call).
+            # `put_call` distinguishes them ("Put"/"Call"/None=equity) — never
+            # sum a Put against a long position (opposite exposure).
             "holdings": holdings,
+        }
+
+    @staticmethod
+    def _map_holding(row: dict[str, Any], total: float) -> dict[str, Any]:
+        """Map one edgartools holdings row to our schema.
+
+        Surfaces ``put_call`` / ``class`` / ``type`` so callers can tell a long
+        equity row apart from an options (Put/Call) row on the same security —
+        13F lists them as distinct rows (grouped by CUSIP + PutCall upstream).
+        """
+        value = row.get("Value") or row.get("value")
+        try:
+            value_f = float(value) if value is not None else None
+        except (ValueError, TypeError):
+            value_f = None
+        pct = round(value_f / total * 100, 4) if value_f and total else None
+        # PutCall is "" for equity, "Put"/"Call" for options — normalise "" to None.
+        put_call = row.get("PutCall") or row.get("put_call") or None
+        return {
+            "cusip": row.get("Cusip") or row.get("cusip"),
+            "ticker": row.get("Ticker") or row.get("ticker"),
+            "name": row.get("Issuer") or row.get("issuer") or row.get("name"),
+            "class": row.get("Class") or row.get("class"),
+            "type": row.get("Type") or row.get("type"),
+            "put_call": put_call,
+            "shares": row.get("SharesPrnAmount") or row.get("shares"),
+            "value_usd": value_f,
+            "pct_of_portfolio": pct,
         }
 
     def compare_13f_holdings(self, fund: str) -> dict[str, Any]:
