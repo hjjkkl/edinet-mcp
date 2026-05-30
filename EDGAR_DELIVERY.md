@@ -39,8 +39,8 @@ C 组（监控）：`get_current_filings` `watch_filings`
 
 ## 自测结果（Step 6）
 
-环境说明：CI/单测全绿；**但本沙箱出口被 SEC 的 WAF 拦截（对 `data.sec.gov` 返回 HTTP 403）**，
-所以**需要联网打 SEC 的验收项无法在本沙箱实跑**。已用以下方式覆盖：
+环境说明：CI/单测全绿。构建期沙箱出口被 SEC 的 WAF 拦截（对 `data.sec.gov` 返回 HTTP 403），
+联网验收项当时改由 Jason 在 MacBook Pro 上跑 —— **现已 14/14 全 PASS**（见下表与结果）。
 
 | 验收项 | 状态 | 说明 |
 |---|---|---|
@@ -49,14 +49,27 @@ C 组（监控）：`get_current_filings` `watch_filings`
 | `tool list` 看到 13 个 tool | ✅ 实测 | `mcp.get_tools()` 返回 13 个 |
 | MCP handshake（Step 5 健康检查） | ✅ 实测 | `--transport http` 启动，`POST /mcp` 返回 `initialize` 结果，`serverInfo.name="EDGAR"` |
 | API 核对（verify_api.py） | ✅ 实测 | edgartools 5.32.0 全部预期 API 存在 |
-| lookup_cik/search_filings/get_filing_text/extract_8k_items/get_financials/get_xbrl_concept/13F×3/insider/ownership/current/watch | ⏳ 待 Jason 在可联网环境跑 `scripts/smoke_test.py` | 沙箱 403 无法实跑；脚本已写好并通过结构/错误路径验证 |
+| lookup_cik/search_filings/get_filing_text/extract_8k_items/get_financials/get_xbrl_concept/13F×3/insider/ownership/current/watch | ✅ **live 实测全过** | Jason 在 MacBook Pro 联网跑 `scripts/smoke_test.py` → **14/14 PASS**（见下） |
 
-> **请 Jason 在能正常访问 sec.gov 的环境跑一遍**（Mac Mini 本机通常可以）：
-> ```bash
-> export EDGAR_IDENTITY="Jason <jason@ksinq.com>"
-> uv run --extra edgar python scripts/verify_api.py
-> uv run --extra edgar python scripts/smoke_test.py
-> ```
+### live smoke test 结果（Jason@MacBook-Pro，2026-05-30，edgartools 5.32.0，全 PASS）
+
+```
+[PASS] fail_fast_without_identity — raised as expected
+[PASS] lookup_cik(AAPL)==320193 — {'ticker': 'AAPL', 'cik': 320193, 'company_name': 'Apple Inc.'}
+[PASS] search_filings(AAPL,10-K)>=1 — accession=0000320193-25-000079
+[PASS] get_filing_text(max_chars=2000) — next_offset=2000
+[PASS] extract_8k_items(NVDA) — 2 items
+[PASS] get_financials(AAPL,income) — ['income_statement']
+[PASS] get_xbrl_concept(AAPL,Revenues,4) — 4 periods
+[PASS] get_13f_holdings(Citadel) — 50 holdings
+[PASS] compare_13f_holdings(Citadel) — four buckets present
+[PASS] get_insider_transactions(NVDA) — 46 rows
+[PASS] get_ownership_filings(AAPL) — count=10
+[PASS] get_current_filings(5) — count=5
+[PASS] watch_filings(since=-10d) — watermark=0001818224-26-000004
+[PASS] error_as_data(bad ticker) — returned error dict
+```
+
 
 ## 配置改动（diff 摘要）
 
