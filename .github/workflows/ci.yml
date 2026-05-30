@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
-      - run: uv sync --extra dev
+      - run: uv sync --extra dev --extra edgar
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy src/
@@ -30,7 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
         with:
           python-version: ${{ matrix.python-version }}
-      - run: uv sync --extra dev
+      - run: uv sync --extra dev --extra edgar
       - run: uv run pytest --cov=edinet_mcp --cov-report=xml -v
 
   sdist-audit:

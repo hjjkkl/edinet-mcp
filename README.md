@@ -222,6 +222,51 @@ edinet-mcp diff -c E02144 -p1 2023 -p2 2024
 edinet-mcp serve
 ```
 
+## EDGAR (SEC) MCP server
+
+This repository also ships a **second, read-only MCP server** — `edgar-mcp` —
+that exposes U.S. SEC EDGAR primary-source data by wrapping
+[`edgartools`](https://github.com/dgunning/edgartools). It mirrors the EDINET
+server's style (FastMCP, click CLI, loguru) and is shipped as the optional
+`edgar` extra so the core EDINET install stays lean.
+
+```bash
+# Install with the edgar extra
+pip install "edinet-mcp[edgar]"        # or: uv sync --extra edgar
+
+# SEC requires a declared identity — fail-fast if unset
+export EDGAR_IDENTITY="Your Name <you@example.com>"
+
+edgar-mcp test                          # verify identity + connectivity
+edgar-mcp serve                         # stdio (Claude Desktop)
+edgar-mcp serve --transport http --host 127.0.0.1 --port 8000   # Streamable HTTP
+```
+
+| Tool | Description |
+|------|-------------|
+| `lookup_cik` | Resolve a ticker/company name to its SEC CIK |
+| `search_filings` | List a company's filings (accession + source_url) |
+| `get_filing_text` | Paged markdown/text of a single filing |
+| `extract_8k_items` | Items reported in an 8-K (1.01, 2.02, 5.02, …) |
+| `get_financials` | Structured income/balance/cashflow from latest 10-K/10-Q |
+| `get_xbrl_concept` | Time series for one XBRL concept (e.g. `us-gaap:Revenues`) |
+| `get_13f_holdings` | An institution's latest 13F-HR holdings |
+| `compare_13f_holdings` | Quarter-over-quarter 13F changes (new/closed/±) |
+| `get_13f_holding_history` | Multi-quarter 13F share history |
+| `get_insider_transactions` | Form 4 insider buys/sells (cluster-buy signal) |
+| `get_ownership_filings` | SC 13D/G 5%+ ownership filings |
+| `get_current_filings` | Market-wide stream of today's filings |
+| `watch_filings` | New filings for a watchlist since a watermark (poll) |
+
+> Every record includes `source_url`, `accession`, and `filing_date`. Text
+> tools are capped (default 20k chars, configurable via `EDGAR_MAX_TEXT_CHARS`)
+> and paged via `offset`. Errors are returned as
+> `{"error": true, "reason": ...}` rather than raised.
+
+Environment variables: **`EDGAR_IDENTITY`** (required), `EDGAR_CACHE_DIR`
+(optional, default `~/.edgar`), `EDGAR_MAX_TEXT_CHARS` (optional, default
+`20000`).
+
 ## API Reference
 
 ### `EdinetClient`
